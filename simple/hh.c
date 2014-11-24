@@ -31,6 +31,26 @@ static FLOAT calc_i_inj(FLOAT i_inj)
   return(i_inj);
 }
 
+
+
+FLOAT t;                   // [msec]
+FLOAT hh_v;                // [mV]
+
+FLOAT hh_n;
+FLOAT hh_m;
+FLOAT hh_h;
+
+
+static FLOAT initialize()
+{
+  t = 0.0;                   // [msec]
+  hh_v = 0.0;                // [mV]
+
+  hh_n = 0.32;
+  hh_m = 0.05;
+  hh_h = 0.60;
+}
+
 int hh(FLOAT stoptime)
 {
   const FLOAT hh_cm = 1.0;         // [muF/cm^2]
@@ -47,36 +67,31 @@ int hh(FLOAT stoptime)
   const FLOAT i_stop  = 175.;
 
 
-  FLOAT t = 0.0;                   // [msec]
-  FLOAT hh_v = 0.0;                // [mV]
-
-  FLOAT hh_n = 0.32;
-  FLOAT hh_m = 0.05;
-  FLOAT hh_h = 0.60;
   //FLOAT hh_n = calc_alpha_n(hh_v) / (calc_alpha_n(hh_v) + calc_beta_n(hh_v));
   //FLOAT hh_m = calc_alpha_m(hh_v) / (calc_alpha_m(hh_v) + calc_beta_m(hh_v));
   //FLOAT hh_h = calc_alpha_h(hh_v) / (calc_alpha_h(hh_v) + calc_beta_h(hh_v));
 
-  FLOAT i_inj = 0.0;
-  FLOAT i_k;
-  FLOAT i_na;
-  FLOAT i_m;
-
-  FLOAT a_n;
-  FLOAT a_m;
-  FLOAT a_h;
-  FLOAT b_n;
-  FLOAT b_m;
-  FLOAT b_h;
-  FLOAT tau_n;
-  FLOAT tau_m;
-  FLOAT tau_h;      
-  FLOAT n_inf;
-  FLOAT m_inf;
-  FLOAT h_inf;
 
   for(t=0.0; t<stoptime; t+=dt)
     {
+      FLOAT i_inj;
+      FLOAT i_k;
+      FLOAT i_na;
+      FLOAT i_m;
+      
+      FLOAT a_n;
+      FLOAT a_m;
+      FLOAT a_h;
+      FLOAT b_n;
+      FLOAT b_m;
+      FLOAT b_h;
+      FLOAT tau_n;
+      FLOAT tau_m;
+      FLOAT tau_h;
+      FLOAT n_inf;
+      FLOAT m_inf;
+      FLOAT h_inf;
+
       a_n = calc_alpha_n(hh_v);
       a_m = calc_alpha_m(hh_v);
       a_h = calc_alpha_h(hh_v);
