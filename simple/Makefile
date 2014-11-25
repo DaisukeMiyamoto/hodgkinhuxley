@@ -13,7 +13,7 @@ PROG     = hh.out
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	cc -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
 
 *.o : $(INCLUDES) $(SRC)
 

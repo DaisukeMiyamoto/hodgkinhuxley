@@ -41,7 +41,7 @@ FLOAT hh_m;
 FLOAT hh_h;
 
 
-static FLOAT initialize()
+static void initialize()
 {
   t = 0.0;                   // [msec]
   hh_v = 0.0;                // [mV]
@@ -49,6 +49,7 @@ static FLOAT initialize()
   hh_n = 0.32;
   hh_m = 0.05;
   hh_h = 0.60;
+  return;
 }
 
 int hh(FLOAT stoptime)
@@ -71,6 +72,7 @@ int hh(FLOAT stoptime)
   //FLOAT hh_m = calc_alpha_m(hh_v) / (calc_alpha_m(hh_v) + calc_beta_m(hh_v));
   //FLOAT hh_h = calc_alpha_h(hh_v) / (calc_alpha_h(hh_v) + calc_beta_h(hh_v));
 
+  initialize();
 
   for(t=0.0; t<stoptime; t+=dt)
     {
@@ -112,9 +114,15 @@ int hh(FLOAT stoptime)
       hh_m += dt * (m_inf - hh_m) / tau_m;
       hh_h += dt * (h_inf - hh_h) / tau_h;
       */
+      /*
       hh_n = hh_n + dt * (a_n * (1.0 - hh_n) - b_n * hh_n);
       hh_m = hh_m + dt * (a_m * (1.0 - hh_m) - b_m * hh_m);
       hh_h = hh_h + dt * (a_h * (1.0 - hh_h) - b_h * hh_h);
+      */
+      hh_n += (1.0 - expf(-dt / tau_n)) * (n_inf - hh_n);
+      hh_m += (1.0 - expf(-dt / tau_m)) * (m_inf - hh_m);
+      hh_h += (1.0 - expf(-dt / tau_h)) * (h_inf - hh_h);
+
 
       i_k  = hh_gk_max  * hh_n * hh_n * hh_n * hh_n * (hh_e_k - hh_v);
       i_na = hh_gna_max * hh_m * hh_m * hh_m * hh_h * (hh_e_na - hh_v);
