@@ -1,7 +1,7 @@
 # Makefile
 
-CC       = gcc
-CFLAGS   = -Wall -O2
+CC       = icc
+CFLAGS   = -Wall -O3
 LDFLAGS  = $(CFLAGS)
 LDLIBS   = -lm
 INCLUDES = 
@@ -14,6 +14,10 @@ all: $(PROG)
 
 $(PROG): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
+
+asm: $(INCLUDES) $(SRC)
+	$(CC) -S $(SRC) $(CFLAGS)
+
 
 *.o : $(INCLUDES) $(SRC)
 

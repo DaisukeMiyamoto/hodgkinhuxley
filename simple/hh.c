@@ -21,16 +21,16 @@ static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( (30. - v) / 10.) + 1.) 
 
 static const FLOAT dt = 0.025; // [msec]
 
-FLOAT hh_v[N_COMPARTMENT];                // [mV]
-FLOAT hh_n[N_COMPARTMENT];
-FLOAT hh_m[N_COMPARTMENT];
-FLOAT hh_h[N_COMPARTMENT];
+static FLOAT hh_v[N_COMPARTMENT];                // [mV]
+static FLOAT hh_n[N_COMPARTMENT];
+static FLOAT hh_m[N_COMPARTMENT];
+static FLOAT hh_h[N_COMPARTMENT];
 
 
-const FLOAT hh_cm[N_COMPARTMENT]      = {1.0};    // [muF/cm^2]
-const FLOAT hh_gk_max[N_COMPARTMENT]  = {36.};    // [mS/cm^2]
-const FLOAT hh_gna_max[N_COMPARTMENT] = {120.};   // [mS/cm^2]
-const FLOAT hh_gm[N_COMPARTMENT]      = {0.3};    // [mS/cm^3]
+static FLOAT hh_cm[N_COMPARTMENT];
+static FLOAT hh_gk_max[N_COMPARTMENT];
+static FLOAT hh_gna_max[N_COMPARTMENT];
+static FLOAT hh_gm[N_COMPARTMENT];
 
 const FLOAT hh_e_k        = -12.0;    // [mV]
 const FLOAT hh_e_na       = 115.0;    // [mV]
@@ -49,6 +49,11 @@ static void initialize()
       //FLOAT hh_n = calc_alpha_n(hh_v) / (calc_alpha_n(hh_v) + calc_beta_n(hh_v));
       //FLOAT hh_m = calc_alpha_m(hh_v) / (calc_alpha_m(hh_v) + calc_beta_m(hh_v));
       //FLOAT hh_h = calc_alpha_h(hh_v) / (calc_alpha_h(hh_v) + calc_beta_h(hh_v));
+
+      hh_cm[i] = 1.0;                 // [muF/cm^2]
+      hh_gk_max[i] = 36.;             // [mS/cm^2]
+      hh_gna_max[i] = 120.;           // [mS/cm^2] 
+      hh_gm[i] = 0.3;                 // [mS/cm^3]
     }
   return;
 }
@@ -207,7 +212,6 @@ int hh_with_table(FLOAT stoptime)
 
       for(j=0; j<N_COMPARTMENT; j++)
 	{
-	  FLOAT i_k, i_na, i_m;
 	  FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
 	  FLOAT theta;
 	  int v_i;
@@ -227,15 +231,19 @@ int hh_with_table(FLOAT stoptime)
 	  hh_n[j] += (1.0 - EXP(-dt / tau_n)) * (n_inf - hh_n[j]);
 	  hh_m[j] += (1.0 - EXP(-dt / tau_m)) * (m_inf - hh_m[j]);
 	  hh_h[j] += (1.0 - EXP(-dt / tau_h)) * (h_inf - hh_h[j]);	  
+	}
 	  
-	  i_k  = hh_gk_max[0]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
-	  i_na = hh_gna_max[0] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
-	  i_m  = hh_gm[0] * (hh_v_rest - hh_v[j]);
+      for(j=0; j<N_COMPARTMENT; j++)
+	{
+	  FLOAT i_k, i_na, i_m;
+	  i_k  = hh_gk_max[i]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
+	  i_na = hh_gna_max[i] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
+	  i_m  = hh_gm[i] * (hh_v_rest - hh_v[j]);
 	  
-	  hh_v[j] = hh_v[j] + dt / hh_cm[0] * (i_k + i_na + i_m + i_inj);  
+	  hh_v[j] = hh_v[j] + dt / hh_cm[i] * (i_k + i_na + i_m + i_inj*(1+0.0001*j));  
 	  
 	}
-      printf("%f %f %f %f\n", i*dt, i_inj, hh_v[0], hh_v[20]);
+      printf("%f %f %f %f\n", i*dt, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
     }
 
   return(0);
