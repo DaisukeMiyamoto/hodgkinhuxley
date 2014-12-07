@@ -18,13 +18,19 @@ objref outfile
 proc setup_cells() { local i, ncells
     ncells = $1
 
-    forall { insert hh }
+    forall { 
+        insert hh
+	L = 100
+	diam = 10
+	Ra = 1000000
+    }
 
     cells[0]{
         stim = new IClamp(0.5)
     	stim.del = 50.0
     	stim.dur = 125.0
-    	stim.amp = 10
+    	stim.amp = 10*100*3.1415926/10000.
+    	//stim.amp = 10
 
 	vec_v.record(&v(0.5))
 	vec_t.record(&t)
