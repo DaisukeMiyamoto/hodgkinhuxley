@@ -2,6 +2,11 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifdef KCOMPUTER
+#include "fj_tool/fapp.h"
+#endif
+
+
 //#define EXP(x) exp((x))
 // #define EXP(x) expf(x)
 #define EXP exp
@@ -217,8 +222,16 @@ int main()
 {
   //printf("Hodgkin-Huxley equation\n");
 
-  //hh(200);
+#ifdef KCOMPUTER
+  fapp_start("calc", 1, 1);  
+#endif
+
   hh_with_table(200);
+
+#ifdef KCOMPUTER
+  fapp_stop("calc", 1, 1);
+#endif
+
   return(0);
 
 }
