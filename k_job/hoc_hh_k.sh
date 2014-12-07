@@ -29,7 +29,7 @@
 #export OMP_NUM_THREADS=8
 
 NRNIV="./special"
-HOC_NAME="./hh.hoc"
+HOC_NAME="./hh_k.hoc"
 NRNOPT=""
 
 LPG="lpgparm -t 4MB -s 4MB -d 4MB -h 4MB -p 4MB"

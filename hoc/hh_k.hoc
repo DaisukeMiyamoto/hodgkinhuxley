@@ -1,0 +1,71 @@
+{load_file("nrngui.hoc")}
+
+// condition
+NCELLS = 10000
+STOPTIME = 200
+
+
+// cells
+create cells[NCELLS]
+
+// global objects
+objref cvode
+objref stim
+objref vec_v, vec_t
+objref outfile
+
+
+proc setup_cells() { local i, ncells
+    ncells = $1
+
+    forall { insert hh_k }
+
+    cells[0]{
+        stim = new IClamp(0.5)
+    	stim.del = 50.0
+    	stim.dur = 125.0
+    	stim.amp = 10
+
+	vec_v.record(&v(0.5))
+	vec_t.record(&t)
+    }
+}
+
+
+
+// start main
+proc main() { local i
+    cvode = new CVode()
+    vec_t = new Vector()
+    vec_v = new Vector()
+
+    printf("\nCondition : \n")
+    printf(" * STOPTIME=%f, dt=%f\n", STOPTIME, dt)
+    printf(" * NCELLS=%d\n\n", NCELLS)
+
+    setup_cells(NCELLS)
+
+    cvode.cache_efficient(1)
+    stdinit()
+    tstop = STOPTIME
+
+    /************ RUN! *************/
+    printf("Calculation Starts\n")
+    run()
+    printf("Calculation Finished !!\n")    
+
+
+    /*********** finalize ********/
+    outfile = new File()
+    outfile.wopen("output.txt")
+    for(i=0; i<vec_t.size; i+=1){
+        //vec_v.printf(outfile, "%10.6f\n")
+	outfile.printf("%10.3f %14.8f\n", vec_t.x(i), vec_v.x(i))
+    }
+    outfile.close()
+
+}
+
+main()
+quit()
+

@@ -3,6 +3,7 @@
 #PJM --rsc-list "node=1"
 #PJM --rsc-list "elapse=00:10:00"
 #PJM --stg-transfiles all
+#PJM --mpi "proc=8"
 #PJM --mpi "use-rankdir"
 #PJM --stgin "/home/hp120263/k00634/hodgkinhuxley/simple/hh.out ./"
 #PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/hh/%j_cache/"
