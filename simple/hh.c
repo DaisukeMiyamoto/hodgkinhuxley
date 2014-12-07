@@ -13,8 +13,10 @@ typedef double FLOAT;
 
 
 static const FLOAT DT = 0.025;        // [msec]
-static const FLOAT CELSIUS = 6.3;     // []
+static const FLOAT CELSIUS = 6.3;     // [degC]
 
+
+static FLOAT v_trap (FLOAT x, FLOAT y) { return( (fabs(x/y) > 1e-6)? ( x/(EXP(x/y) - 1.0) ) : ( y*(1. - x/y/2.) ) ); }
 /*
 static FLOAT calc_alpha_n (FLOAT v) { return( (10. - v) / (100. * (EXP( (10. - v) / 10.) - 1.) ) ); }
 static FLOAT calc_beta_n  (FLOAT v) { return( 0.125 * EXP(- v / 80.));                         }
@@ -23,12 +25,14 @@ static FLOAT calc_beta_m  (FLOAT v) { return( 4. * EXP(- v / 18.) );            
 static FLOAT calc_alpha_h (FLOAT v) { return( 0.07 * EXP(- v / 20.) );                         }
 static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( (30. - v) / 10.) + 1.) );             }
 */
-static FLOAT calc_alpha_n (FLOAT v) { return( 0.01  * -(v+55.) / (EXP( -(v+55.)/10.) - 1.) ); }
-static FLOAT calc_beta_n  (FLOAT v) { return( 0.125 * EXP( -(v+65.) / 80.) );                 }
-static FLOAT calc_alpha_m (FLOAT v) { return( 0.1   * -(v+40.) / (EXP( -(v+40.)/10.) - 1.) ); }
-static FLOAT calc_beta_m  (FLOAT v) { return( 4.    * EXP( -(v+65) / 18.) );                  }
-static FLOAT calc_alpha_h (FLOAT v) { return( 0.07  * EXP( -(v+65) / 20.) );                  }
-static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( -(v+35) / 10.) + 1.) );              }
+//static FLOAT calc_alpha_n (FLOAT v) { return( 0.01  * -(v+55.) / (EXP( -(v+55.)/10.) - 1.) ); }
+//static FLOAT calc_alpha_m (FLOAT v) { return( 0.1   * -(v+40.) / (EXP( -(v+40.)/10.) - 1.) ); }
+static FLOAT calc_alpha_n (FLOAT v) { return( 0.01  * v_trap(-(v+55.), 10.) );   }
+static FLOAT calc_beta_n  (FLOAT v) { return( 0.125 * EXP( -(v+65.) / 80.) );    }
+static FLOAT calc_alpha_m (FLOAT v) { return( 0.1   * v_trap(-(v+40.), 10.));    }
+static FLOAT calc_beta_m  (FLOAT v) { return( 4.    * EXP( -(v+65) / 18.) );     }
+static FLOAT calc_alpha_h (FLOAT v) { return( 0.07  * EXP( -(v+65) / 20.) );     }
+static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( -(v+35) / 10.) + 1.) ); }
 
 //static FLOAT correct_temp (void) { return(pow(3.0, CELSIUS - 6.3 / 10.)); }
 //static FLOAT calc_n_inf (FLOAT v) { return( 1.0 / (correct_temp() * (calc_alpha_n(v)+calc_beta_n(v)) ) ); }
@@ -67,9 +71,9 @@ static void initialize()
 
       hh_cm[i]      = 1.0;             // [muF/cm^2]
       hh_cm_inv[i]  = 1.0 / hh_cm[i];  // [cm^2/muF]
-      hh_gk_max[i]  = 36.;           // [S/cm^2]
-      hh_gna_max[i] = 120.;            // [S/cm^2] 
-      hh_gm[i]      = 0.3;          // [S/cm^3]
+      hh_gk_max[i]  =  36.;            // [mS/cm^2]
+      hh_gna_max[i] = 120.;            // [mS/cm^2] 
+      hh_gm[i]      =   0.3;           // [mS/cm^3]
     }
 
   /*
@@ -160,7 +164,7 @@ int hh_with_table(FLOAT stoptime)
     {
       FLOAT i_inj;
       if(i > inj_start && i < inj_stop){
-	i_inj = 10.0 / 1000.;
+	i_inj = 10.0;
       }else{
 	i_inj = 0.0;
       }
@@ -188,20 +192,20 @@ int hh_with_table(FLOAT stoptime)
 
 	  hh_n[j] += (1.0 - EXP(-DT / tau_n)) * (n_inf - hh_n[j]);
 	  hh_m[j] += (1.0 - EXP(-DT / tau_m)) * (m_inf - hh_m[j]);
-	  hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);	  
+	  hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);
 	}
 	  
       for(j=0; j<N_COMPARTMENT; j++)
 	{
 	  FLOAT i_k, i_na, i_m;
-	  i_k  = hh_gk_max[i]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
-	  i_na = hh_gna_max[i] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
-	  i_m  = hh_gm[i] * (hh_v_rest - hh_v[j]);
+	  i_k  = hh_gk_max[j]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
+	  i_na = hh_gna_max[j] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
+	  i_m  = hh_gm[j] * (hh_v_rest - hh_v[j]);
 	  
-	  hh_v[j] += DT * hh_cm_inv[i] * (i_k + i_na + i_m + i_inj);  
+	  hh_v[j] += DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);  
 	  
 	}
-      printf("%f %f %f %f\n", i*dt, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
+      printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
     }
 
   return(0);
