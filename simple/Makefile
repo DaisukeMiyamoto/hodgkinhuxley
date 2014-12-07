@@ -1,9 +1,9 @@
 # Makefile
 
 CC       = icc
-CFLAGS   = -Wall -O3
+CFLAGS   = -Wall -O3 -xHost -mkl
 LDFLAGS  = $(CFLAGS)
-LDLIBS   = -lm
+LDLIBS   = 
 INCLUDES = 
 SRC      = hh.c
 OBJS     = hh.o

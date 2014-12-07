@@ -9,7 +9,7 @@
 #define N_COMPARTMENT 10000
 
 typedef double FLOAT;
-// typedef float FLOAT;
+//typedef float FLOAT;
 
 static FLOAT calc_alpha_n (FLOAT v) { return( (10. - v) / (100. * (EXP( (10. - v) / 10.) - 1.) ) ); }
 static FLOAT calc_beta_n  (FLOAT v) { return( 0.125 * EXP(- v / 80.));                         }
@@ -28,6 +28,7 @@ static FLOAT hh_h[N_COMPARTMENT];
 
 
 static FLOAT hh_cm[N_COMPARTMENT];
+static FLOAT hh_cm_inv[N_COMPARTMENT];
 static FLOAT hh_gk_max[N_COMPARTMENT];
 static FLOAT hh_gna_max[N_COMPARTMENT];
 static FLOAT hh_gm[N_COMPARTMENT];
@@ -51,6 +52,7 @@ static void initialize()
       //FLOAT hh_h = calc_alpha_h(hh_v) / (calc_alpha_h(hh_v) + calc_beta_h(hh_v));
 
       hh_cm[i] = 1.0;                 // [muF/cm^2]
+      hh_cm_inv[i] = 1.0 / hh_cm[i];  // [cm^2/muF]
       hh_gk_max[i] = 36.;             // [mS/cm^2]
       hh_gna_max[i] = 120.;           // [mS/cm^2] 
       hh_gm[i] = 0.3;                 // [mS/cm^3]
@@ -193,8 +195,11 @@ int hh(FLOAT stoptime)
 
 int hh_with_table(FLOAT stoptime)
 {
-  int i, j;
-  int i_stop;
+  unsigned int i, j;
+  unsigned int i_stop;
+  unsigned int v_i_array[N_COMPARTMENT];
+  FLOAT theta_array[N_COMPARTMENT];
+
   const int inj_start =  50./dt;
   const int inj_stop  = 175./dt;
 
@@ -212,14 +217,17 @@ int hh_with_table(FLOAT stoptime)
 
       for(j=0; j<N_COMPARTMENT; j++)
 	{
+	  v_i_array[j] = (int)(hh_v[j] - TABLE_MIN_V);
+	  theta_array[j] = (hh_v[j] - TABLE_MIN_V) - (FLOAT)v_i_array[j];
+	  if(v_i_array[j] >= TABLE_SIZE){ v_i_array[j]=TABLE_SIZE-1; theta_array[j]=1.0; }
+	  if(v_i_array[j] <  0)         { v_i_array[j]=0;            theta_array[j]=0.0; }
+	}
+
+      for(j=0; j<N_COMPARTMENT; j++)
+	{
 	  FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
-	  FLOAT theta;
-	  int v_i;
-	  
-	  v_i = (int)(hh_v[j] - TABLE_MIN_V);
-	  theta = (hh_v[j] - TABLE_MIN_V) - (FLOAT)v_i;
-	  if(v_i>=TABLE_SIZE){ v_i=TABLE_SIZE-1; theta=1.0; }
-	  if(v_i<0){ v_i=0; theta=0.0; }
+	  unsigned int v_i = v_i_array[j];
+	  FLOAT theta = theta_array[j];
 
 	  tau_n = TABLE_N_TAU(v_i) + theta * (TABLE_N_TAU(v_i+1) - TABLE_N_TAU(v_i));
 	  n_inf = TABLE_N_INF(v_i) + theta * (TABLE_N_INF(v_i+1) - TABLE_N_INF(v_i));
@@ -240,10 +248,10 @@ int hh_with_table(FLOAT stoptime)
 	  i_na = hh_gna_max[i] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
 	  i_m  = hh_gm[i] * (hh_v_rest - hh_v[j]);
 	  
-	  hh_v[j] = hh_v[j] + dt / hh_cm[i] * (i_k + i_na + i_m + i_inj*(1+0.0001*j));  
+	  hh_v[j] = hh_v[j] + dt * hh_cm_inv[i] * (i_k + i_na + i_m + i_inj);  
 	  
 	}
-      printf("%f %f %f %f\n", i*dt, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
+      //printf("%f %f %f %f\n", i*dt, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
     }
 
   return(0);
