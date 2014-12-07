@@ -7,9 +7,11 @@
 #endif
 
 
-//#define EXP(x) exp((x))
-// #define EXP(x) expf(x)
-#define EXP exp
+#define EXP(x) exp((x))
+//#define EXP(x) expf((x))
+//#define EXP(x) hoc_Exp((x))
+
+double hoc_Exp(double x);
 
 #define N_COMPARTMENT 10000
 
@@ -44,6 +46,7 @@ static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( -(v+35) / 10.) + 1.) );
 
 
 static FLOAT hh_v[N_COMPARTMENT];     // [mV]
+static FLOAT hh_dv[N_COMPARTMENT];
 static FLOAT hh_n[N_COMPARTMENT];
 static FLOAT hh_m[N_COMPARTMENT];
 static FLOAT hh_h[N_COMPARTMENT];
@@ -59,6 +62,14 @@ const FLOAT hh_e_k        = -77.0;    // [mV]
 const FLOAT hh_e_na       =  50.0;    // [mV]
 const FLOAT hh_v_rest     = -54.3;    // [mV]
 
+double hoc_Exp(double x){
+  if (x < -700.) {
+    return 0.;
+  }else if (x > 700) {
+    return exp(700.);
+  }
+  return exp(x);
+}
 
 static void initialize()
 {
@@ -118,7 +129,7 @@ static void makeTable()
     {
       FLOAT v;
       FLOAT a_n, a_m, a_h, b_n, b_m, b_h;
-      v = (TABLE_MAX_V - TABLE_MIN_V)/(FLOAT)TABLE_SIZE * i + TABLE_MIN_V;
+      v = (TABLE_MAX_V - TABLE_MIN_V)/(FLOAT)(TABLE_SIZE-1) * i + TABLE_MIN_V;
       a_n = calc_alpha_n(v);
       a_m = calc_alpha_m(v);
       a_h = calc_alpha_h(v);
@@ -132,6 +143,9 @@ static void makeTable()
       TABLE_M_INF(i) = a_m * TABLE_M_TAU(i);
       TABLE_H_TAU(i) = 1. / (a_h + b_h);
       TABLE_H_INF(i) = a_h * TABLE_H_TAU(i);
+
+      //printf("%d : v(%.4f) n(%.4f %.4f) m(%.4f %.4f) h(%.4f %.4f)\n", i, v, TABLE_N_TAU(i), TABLE_N_INF(i), TABLE_M_TAU(i), TABLE_M_INF(i), TABLE_H_TAU(i), TABLE_H_INF(i) );
+
     }
   return;
 }
@@ -162,9 +176,6 @@ int hh_with_table(FLOAT stoptime)
   const int inj_start =  50./DT;
   const int inj_stop  = 175./DT;
 
-  initialize();
-  makeTable();
-
   for(i=0,i_stop=stoptime/DT; i<i_stop; i++)
     {
       FLOAT i_inj;
@@ -173,6 +184,7 @@ int hh_with_table(FLOAT stoptime)
       }else{
 	i_inj = 0.0;
       }
+      printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
 
       for(j=0; j<N_COMPARTMENT; j++)
 	{
@@ -188,12 +200,18 @@ int hh_with_table(FLOAT stoptime)
 	  unsigned int v_i = v_i_array[j];
 	  FLOAT theta = theta_array[j];
 
-	  tau_n = TABLE_N_TAU(v_i) + theta * (TABLE_N_TAU(v_i+1) - TABLE_N_TAU(v_i));
-	  n_inf = TABLE_N_INF(v_i) + theta * (TABLE_N_INF(v_i+1) - TABLE_N_INF(v_i));
-	  tau_m = TABLE_M_TAU(v_i) + theta * (TABLE_M_TAU(v_i+1) - TABLE_M_TAU(v_i));
-	  m_inf = TABLE_M_INF(v_i) + theta * (TABLE_M_INF(v_i+1) - TABLE_M_INF(v_i));
-	  tau_h = TABLE_H_TAU(v_i) + theta * (TABLE_H_TAU(v_i+1) - TABLE_H_TAU(v_i));
-	  h_inf = TABLE_H_INF(v_i) + theta * (TABLE_H_INF(v_i+1) - TABLE_H_INF(v_i));
+	  tau_n = TABLE_N_TAU(v_i);
+	  n_inf = TABLE_N_INF(v_i);
+	  tau_m = TABLE_M_TAU(v_i);
+	  m_inf = TABLE_M_INF(v_i);
+	  tau_h = TABLE_H_TAU(v_i);
+	  h_inf = TABLE_H_INF(v_i);
+	  tau_n += theta * (TABLE_N_TAU(v_i+1) - tau_n);
+	  n_inf += theta * (TABLE_N_INF(v_i+1) - n_inf);
+	  tau_m += theta * (TABLE_M_TAU(v_i+1) - tau_m);
+	  m_inf += theta * (TABLE_M_INF(v_i+1) - m_inf);
+	  tau_h += theta * (TABLE_H_TAU(v_i+1) - tau_h);
+	  h_inf += theta * (TABLE_H_INF(v_i+1) - h_inf);
 
 	  hh_n[j] += (1.0 - EXP(-DT / tau_n)) * (n_inf - hh_n[j]);
 	  hh_m[j] += (1.0 - EXP(-DT / tau_m)) * (m_inf - hh_m[j]);
@@ -202,15 +220,17 @@ int hh_with_table(FLOAT stoptime)
 	  
       for(j=0; j<N_COMPARTMENT; j++)
 	{
-	  FLOAT i_k, i_na, i_m;
+	  FLOAT i_k, i_na, i_m, dv;
 	  i_k  = hh_gk_max[j]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
 	  i_na = hh_gna_max[j] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
 	  i_m  = hh_gm[j] * (hh_v_rest - hh_v[j]);
-	  
-	  hh_v[j] += DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);  
-	  
+
+	  //dv = hh_dv[j];
+	  //hh_dv[j] = DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);
+	  //hh_v[j] += (hh_dv[j] + dv) * 0.5;
+	  hh_v[j] += DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);
 	}
-      printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
+
     }
 
   return(0);
@@ -221,6 +241,10 @@ int hh_with_table(FLOAT stoptime)
 int main()
 {
   //printf("Hodgkin-Huxley equation\n");
+
+
+  initialize();
+  makeTable();
 
 #ifdef KCOMPUTER
   fapp_start("calc", 1, 1);  
