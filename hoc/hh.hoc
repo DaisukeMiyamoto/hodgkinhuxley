@@ -41,7 +41,7 @@ proc main() { local i
 
     printf("\nCondition : \n")
     printf(" * STOPTIME=%f, dt=%f\n", STOPTIME, dt)
-    printf(" * #CELLS=%d\n\n", NCELLS)
+    printf(" * NCELLS=%d\n\n", NCELLS)
 
     setup_cells(NCELLS)
 
