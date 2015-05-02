@@ -2,6 +2,7 @@
 
 CC       = fccpx
 CFLAGS   = -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
+#CFLAGS   = -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -DUSE_FLOAT
 LDFLAGS  = $(CFLAGS)
 LDLIBS   = -lm
 INCLUDES = 

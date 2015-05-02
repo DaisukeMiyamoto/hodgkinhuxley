@@ -2,7 +2,7 @@
 #PJM --rsc-list "node=1"
 #PJM --rsc-list "elapse=00:10:00"
 #PJM --rsc-list "rscgrp=small"
-#PJM --mpi "proc=1"
+#PJM --mpi "proc=8"
 #PJM -s
 
 # staging

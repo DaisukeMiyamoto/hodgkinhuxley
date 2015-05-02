@@ -7,16 +7,20 @@
 #endif
 
 
+#ifdef USE_FLOAT
+#define EXP(x) expf((x))
+typedef float FLOAT;
+#else
 #define EXP(x) exp((x))
-//#define EXP(x) expf((x))
+typedef double FLOAT;
+#endif
+
 //#define EXP(x) hoc_Exp((x))
 
 double hoc_Exp(double x);
 
 #define N_COMPARTMENT 10000
 
-typedef double FLOAT;
-//typedef float FLOAT;
 
 
 static const FLOAT DT = 0.025;        // [msec]
@@ -120,7 +124,7 @@ static void initialize()
 #define TABLE_MAX_V 100.0
 #define TABLE_MIN_V -100.0
 
-FLOAT hh_table[TABLE_SIZE][6];
+FLOAT hh_table[TABLE_SIZE][8];
 
 static void makeTable()
 {
