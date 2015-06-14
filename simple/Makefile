@@ -1,9 +1,10 @@
 # Makefile
 
-CC       = icc
-CFLAGS   = -Wall -O3 -xHost -mkl
+CC       = mpifccpx
+CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
+#CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -DUSE_FLOAT
 LDFLAGS  = $(CFLAGS)
-LDLIBS   = 
+LDLIBS   = -lm
 INCLUDES = 
 SRC      = hh.c
 OBJS     = hh.o

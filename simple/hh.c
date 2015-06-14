@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include "mpi.h"
 
 #ifdef KCOMPUTER
 #include "fj_tool/fapp.h"
@@ -188,19 +189,24 @@ int hh_with_table(FLOAT stoptime)
       }else{
 	i_inj = 0.0;
       }
-      printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
+      //printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
 
-      for(j=0; j<N_COMPARTMENT; j++)
-	{
-	  v_i_array[j] = (int)(hh_v[j] - TABLE_MIN_V);
-	  theta_array[j] = (hh_v[j] - TABLE_MIN_V) - (FLOAT)v_i_array[j];
-	  if(v_i_array[j] >= TABLE_SIZE){ v_i_array[j]=TABLE_SIZE-1; theta_array[j]=1.0; }
-	  if(v_i_array[j] <  0)         { v_i_array[j]=0;            theta_array[j]=0.0; }
-	}
+#pragma omp parallel
+      {
 
-      for(j=0; j<N_COMPARTMENT; j++)
-	{
-	  FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    v_i_array[j] = (int)(hh_v[j] - TABLE_MIN_V);
+	    theta_array[j] = (hh_v[j] - TABLE_MIN_V) - (FLOAT)v_i_array[j];
+	    if(v_i_array[j] >= TABLE_SIZE){ v_i_array[j]=TABLE_SIZE-1; theta_array[j]=1.0; }
+	    if(v_i_array[j] <  0)         { v_i_array[j]=0;            theta_array[j]=0.0; }
+	  }
+	
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
 	  unsigned int v_i = v_i_array[j];
 	  FLOAT theta = theta_array[j];
 
@@ -222,9 +228,12 @@ int hh_with_table(FLOAT stoptime)
 	  hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);
 	}
 	  
+#pragma omp for
       for(j=0; j<N_COMPARTMENT; j++)
 	{
-	  FLOAT i_k, i_na, i_m, dv;
+	  FLOAT i_k;
+	  FLOAT i_na;
+	  FLOAT i_m;
 	  i_k  = hh_gk_max[j]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
 	  i_na = hh_gna_max[j] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
 	  i_m  = hh_gm[j] * (hh_v_rest - hh_v[j]);
@@ -234,6 +243,7 @@ int hh_with_table(FLOAT stoptime)
 	  //hh_v[j] += (hh_dv[j] + dv) * 0.5;
 	  hh_v[j] += DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);
 	}
+      }
 
     }
 
@@ -242,10 +252,13 @@ int hh_with_table(FLOAT stoptime)
 
 
 
-int main()
+int main(int argc, char **argv)
 {
   //printf("Hodgkin-Huxley equation\n");
+  int myid;
 
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
   initialize();
   makeTable();
@@ -254,12 +267,15 @@ int main()
   fapp_start("calc", 1, 1);  
 #endif
 
-  hh_with_table(200);
+  printf("start (%d)\n", myid);
+  hh_with_table(10000);
+  printf("finished (%d)\n", myid);
 
 #ifdef KCOMPUTER
   fapp_stop("calc", 1, 1);
 #endif
 
+  MPI_Finalize();
   return(0);
 
 }

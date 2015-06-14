@@ -1,20 +1,20 @@
 #!/bin/bash -x
 
-#PJM --rsc-list "node=1"
+#PJM --rsc-list "node=8"
 #PJM --rsc-list "elapse=00:10:00"
 #PJM --stg-transfiles all
 #PJM --mpi "use-rankdir"
 #PJM --stgin "/home/hp120263/k00634/hodgkinhuxley/simple/hh.out ./"
-#PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/hh/%j_cache/"
-#PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/hh/%j_perf/"
-#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/hh/%j_stat/"
-#PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/hh/%j_inst/"
-#PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/hh/%j_mem/"
+#PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/prof/hh/%j_cache/"
+#PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/prof/hh/%j_perf/"
+#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/prof/hh/%j_stat/"
+#PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/prof/hh/%j_inst/"
+#PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/prof/hh/%j_mem/"
 #PJM -s
 
 . /work/system/Env_base
 
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=8
 
 PROF_CACHE="fapp -C -d ./prof_cache -Ihwm -Hevent=Cache -L1"
 PROF_PERF="fapp -C -d ./prof_perf -Ihwm -Hevent=Performance -L1"
