@@ -1,8 +1,8 @@
 # Makefile
 
 CC       = mpifccpx
-CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
-#CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -DUSE_FLOAT
+#CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
+CFLAGS   = -Kfast,openmp,ocl,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -DTABLE_TYPE
 LDFLAGS  = $(CFLAGS)
 LDLIBS   = -lm
 INCLUDES = 

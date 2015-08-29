@@ -114,18 +114,31 @@ static void initialize()
   return;
 }
 
+#define TABLE_SIZE 201
+#define TABLE_MAX_V 100.0f
+#define TABLE_MIN_V -100.0f
 
+#ifdef TABLE_TYPE
+FLOAT hh_table[TABLE_SIZE][6];
 #define TABLE_N_TAU(x) hh_table[(x)][0]
 #define TABLE_N_INF(x) hh_table[(x)][1]
 #define TABLE_M_TAU(x) hh_table[(x)][2]
 #define TABLE_M_INF(x) hh_table[(x)][3]
 #define TABLE_H_TAU(x) hh_table[(x)][4]
 #define TABLE_H_INF(x) hh_table[(x)][5]
-#define TABLE_SIZE 201
-#define TABLE_MAX_V 100.0
-#define TABLE_MIN_V -100.0
 
-FLOAT hh_table[TABLE_SIZE][8];
+#else
+
+FLOAT hh_table[6][TABLE_SIZE];
+#define TABLE_N_TAU(x) hh_table[0][(x)]
+#define TABLE_N_INF(x) hh_table[1][(x)]
+#define TABLE_M_TAU(x) hh_table[2][(x)]
+#define TABLE_M_INF(x) hh_table[3][(x)]
+#define TABLE_H_TAU(x) hh_table[4][(x)]
+#define TABLE_H_INF(x) hh_table[5][(x)]
+#endif
+
+
 
 static void makeTable()
 {
@@ -171,6 +184,21 @@ static FLOAT calc_i_inj(FLOAT i_inj)
 }
 
 
+
+typedef struct _memb{
+  FLOAT m;
+  FLOAT h;
+  FLOAT n;
+  FLOAT gk_max;
+  FLOAT gna_max;
+  FLOAT gm;
+  FLOAT v;
+  FLOAT cm_inv;
+} Memb;
+
+Memb memb[N_COMPARTMENT];
+
+
 int hh_with_table(FLOAT stoptime)
 {
   unsigned int i, j;
@@ -194,62 +222,184 @@ int hh_with_table(FLOAT stoptime)
 #pragma omp parallel
       {
 
+#ifdef KCOMPUTER
+  fapp_start("prepare", 4, 2);  
+#endif
+
+
 #pragma omp for
 	for(j=0; j<N_COMPARTMENT; j++)
 	  {
 	    v_i_array[j] = (int)(hh_v[j] - TABLE_MIN_V);
 	    theta_array[j] = (hh_v[j] - TABLE_MIN_V) - (FLOAT)v_i_array[j];
-	    if(v_i_array[j] >= TABLE_SIZE){ v_i_array[j]=TABLE_SIZE-1; theta_array[j]=1.0; }
-	    if(v_i_array[j] <  0)         { v_i_array[j]=0;            theta_array[j]=0.0; }
 	  }
+
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    if(!(v_i_array[j] >= TABLE_SIZE || v_i_array[j]<0) ){
+	      ;
+	    }else if(v_i_array[j] >= TABLE_SIZE){
+	      v_i_array[j]=TABLE_SIZE-1; theta_array[j]=1.0;
+	    }else if(v_i_array[j] <  0){
+	      v_i_array[j]=0; theta_array[j]=0.0;
+	    }
+	  }
+
+#ifdef KCOMPUTER
+  fapp_stop("prepare", 4, 2);  
+#endif
 	
+
+#ifdef KCOMPUTER
+  fapp_start("state", 2, 2);  
+#endif
+
+#ifdef SPLIT_STATE
+
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    unsigned int v_i = v_i_array[j];
+	    FLOAT theta = theta_array[j];
+	    FLOAT tau_n, n_inf;
+
+	    tau_n = TABLE_N_TAU(v_i);
+	    n_inf = TABLE_N_INF(v_i);
+	    tau_n += theta * (TABLE_N_TAU(v_i+1) - tau_n);
+	    n_inf += theta * (TABLE_N_INF(v_i+1) - n_inf);
+	    hh_n[j] += (1.0 - EXP(-DT / tau_n)) * (n_inf - hh_n[j]);
+	  }
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    unsigned int v_i = v_i_array[j];
+	    FLOAT theta = theta_array[j];
+	    FLOAT tau_m, m_inf;
+
+	    tau_m = TABLE_M_TAU(v_i);
+	    m_inf = TABLE_M_INF(v_i);
+	    tau_m += theta * (TABLE_M_TAU(v_i+1) - tau_m);
+	    m_inf += theta * (TABLE_M_INF(v_i+1) - m_inf);
+	    hh_m[j] += (1.0 - EXP(-DT / tau_m)) * (m_inf - hh_m[j]);
+	  }
+#pragma omp for
+	for(j=0; j<N_COMPARTMENT; j++)
+	  {
+	    unsigned int v_i = v_i_array[j];
+	    FLOAT theta = theta_array[j];
+	    FLOAT tau_h, h_inf;
+
+	    tau_h = TABLE_H_TAU(v_i);
+	    h_inf = TABLE_H_INF(v_i);
+	    tau_h += theta * (TABLE_H_TAU(v_i+1) - tau_h);
+	    h_inf += theta * (TABLE_H_INF(v_i+1) - h_inf);	    
+	    hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);
+	  }
+
+#else
+
 #pragma omp for
 	for(j=0; j<N_COMPARTMENT; j++)
 	  {
 	    FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
-	  unsigned int v_i = v_i_array[j];
-	  FLOAT theta = theta_array[j];
+	    unsigned int v_i = v_i_array[j];
+	    FLOAT theta = theta_array[j];
 
-	  tau_n = TABLE_N_TAU(v_i);
-	  n_inf = TABLE_N_INF(v_i);
-	  tau_m = TABLE_M_TAU(v_i);
-	  m_inf = TABLE_M_INF(v_i);
-	  tau_h = TABLE_H_TAU(v_i);
-	  h_inf = TABLE_H_INF(v_i);
-	  tau_n += theta * (TABLE_N_TAU(v_i+1) - tau_n);
-	  n_inf += theta * (TABLE_N_INF(v_i+1) - n_inf);
-	  tau_m += theta * (TABLE_M_TAU(v_i+1) - tau_m);
-	  m_inf += theta * (TABLE_M_INF(v_i+1) - m_inf);
-	  tau_h += theta * (TABLE_H_TAU(v_i+1) - tau_h);
-	  h_inf += theta * (TABLE_H_INF(v_i+1) - h_inf);
+	    tau_n = TABLE_N_TAU(v_i);
+	    n_inf = TABLE_N_INF(v_i);
+	    tau_m = TABLE_M_TAU(v_i);
+	    m_inf = TABLE_M_INF(v_i);
+	    tau_h = TABLE_H_TAU(v_i);
+	    h_inf = TABLE_H_INF(v_i);
+	    /*
+	    tau_n += theta * (TABLE_N_TAU(v_i+1) - tau_n);
+	    n_inf += theta * (TABLE_N_INF(v_i+1) - n_inf);
+	    tau_m += theta * (TABLE_M_TAU(v_i+1) - tau_m);
+	    m_inf += theta * (TABLE_M_INF(v_i+1) - m_inf);
+	    tau_h += theta * (TABLE_H_TAU(v_i+1) - tau_h);
+	    h_inf += theta * (TABLE_H_INF(v_i+1) - h_inf);
+	    
+	    hh_n[j] += (1.0 - EXP(-DT / tau_n)) * (n_inf - hh_n[j]);
+	    hh_m[j] += (1.0 - EXP(-DT / tau_m)) * (m_inf - hh_m[j]);
+	    hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);
+	    */
 
-	  hh_n[j] += (1.0 - EXP(-DT / tau_n)) * (n_inf - hh_n[j]);
-	  hh_m[j] += (1.0 - EXP(-DT / tau_m)) * (m_inf - hh_m[j]);
-	  hh_h[j] += (1.0 - EXP(-DT / tau_h)) * (h_inf - hh_h[j]);
+	    tau_n = (tau_n + theta * (TABLE_N_TAU(v_i+1) - tau_n));
+	    tau_m = (tau_m + theta * (TABLE_M_TAU(v_i+1) - tau_m));
+	    tau_h = (tau_h + theta * (TABLE_H_TAU(v_i+1) - tau_h));
+	    n_inf = n_inf + theta * (TABLE_N_INF(v_i+1) - n_inf) - hh_n[j];
+	    m_inf = m_inf + theta * (TABLE_M_INF(v_i+1) - m_inf) - hh_m[j];
+	    h_inf = h_inf + theta * (TABLE_H_INF(v_i+1) - h_inf) - hh_h[j];
+	    
+	    hh_n[j] += (1.0f - EXP(-DT/tau_n)) * n_inf;
+	    hh_m[j] += (1.0f - EXP(-DT/tau_m)) * m_inf;
+	    hh_h[j] += (1.0f - EXP(-DT/tau_h)) * h_inf;
+	  }
+
+#endif
+
+#ifdef KCOMPUTER
+  fapp_stop("state", 2, 2);  
+#endif
+  /*
+      for(j=0; j<N_COMPARTMENT; j++)
+	{
+	  memb[j].m       = hh_m[j];
+	  memb[j].h       = hh_h[j];
+	  memb[j].n       = hh_n[j];
+	  memb[j].gk_max  = hh_gk_max[j];
+	  memb[j].gna_max = hh_gna_max[j];
+	  memb[j].gm      = hh_gm[j];
+	  memb[j].v       = hh_v[j];
+	  memb[j].cm_inv  = hh_cm_inv[j];
 	}
-	  
+  */
+
+
+#ifdef KCOMPUTER
+  fapp_start("current", 3, 2);  
+#endif
+  /*	  
+#pragma loop noalias
+#pragma loop norecurrence
+#pragma loop simd
+#pragma loop novrec
+#pragma loop prefetch
+  */
 #pragma omp for
       for(j=0; j<N_COMPARTMENT; j++)
 	{
-	  FLOAT i_k;
-	  FLOAT i_na;
-	  FLOAT i_m;
+	  //FLOAT i_k;
+	  //FLOAT i_na;
+	  //FLOAT i_m;
+	  /*
+	  i_k  = memb[j].gk_max * memb[j].n * memb[j].n * memb[j].n * memb[j].n * (hh_e_k - memb[j].v);
+	  i_na = memb[j].gna_max * memb[j].m * memb[j].m * memb[j].m * memb[j].h * (hh_e_na - memb[j].v);
+	  i_m  = memb[j].gm * (hh_v_rest - memb[j].v);
+	  hh_v[j] += DT * memb[j].cm_inv * (i_k + i_na + i_m + i_inj);
+	  */
+	  /*
 	  i_k  = hh_gk_max[j]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]);
 	  i_na = hh_gna_max[j] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j]);
 	  i_m  = hh_gm[j] * (hh_v_rest - hh_v[j]);
-
-	  //dv = hh_dv[j];
-	  //hh_dv[j] = DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);
-	  //hh_v[j] += (hh_dv[j] + dv) * 0.5;
 	  hh_v[j] += DT * hh_cm_inv[j] * (i_k + i_na + i_m + i_inj);
+	  */
+
+	  hh_v[j] += DT * hh_cm_inv[0] * (hh_gk_max[0]  * hh_n[j] * hh_n[j] * hh_n[j] * hh_n[j] * (hh_e_k - hh_v[j]) 
+					  + hh_gna_max[0] * hh_m[j] * hh_m[j] * hh_m[j] * hh_h[j] * (hh_e_na - hh_v[j])
+					  + hh_gm[0] * (hh_v_rest - hh_v[j]));
 	}
       }
+
+#ifdef KCOMPUTER
+      fapp_stop("current", 3, 2);  
+#endif
 
     }
 
   return(0);
 }
-
 
 
 int main(int argc, char **argv)

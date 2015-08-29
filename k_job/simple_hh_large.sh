@@ -8,7 +8,7 @@
 #PJM --stgin "/home/hp120263/k00634/hodgkinhuxley/simple/hh.out ./"
 #--PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/prof/hh/%j_cache/"
 #--PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/prof/hh/%j_perf/"
-#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/prof/hh/%j_stat/"
+#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/prof/simple/%j_stat/"
 #--PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/prof/hh/%j_inst/"
 #--PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/prof/hh/%j_mem/"
 #PJM -s

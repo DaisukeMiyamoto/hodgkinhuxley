@@ -1,15 +1,16 @@
 #!/bin/bash -x
 
-#PJM --rsc-list "node=1"
-#PJM --rsc-list "elapse=00:10:00"
+#PJM --rsc-list "node=10368"
+#PJM --rsc-list "elapse=00:30:00"
+#PJM --rsc-list "rscgrp=large"
 #PJM --stg-transfiles all
 #PJM --mpi "use-rankdir"
 #PJM --stgin "/home/hp120263/k00634/hodgkinhuxley/simple/hh.out ./"
-#PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/prof/simple/%j_cache/"
-#PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/prof/simple/%j_perf/"
+#--PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/prof/hh/%j_cache/"
+#--PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/prof/hh/%j_perf/"
 #PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/prof/simple/%j_stat/"
-#PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/prof/simple/%j_inst/"
-#PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/prof/simple/%j_mem/"
+#--PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/prof/hh/%j_inst/"
+#--PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/prof/hh/%j_mem/"
 #PJM -s
 
 . /work/system/Env_base
@@ -28,7 +29,7 @@ EXEC="./hh.out"
 
 #time ${PROF_CACHE} ${MPIEXEC} ${EXEC}
 #time ${PROF_PERF} ${MPIEXEC} ${EXEC}
-time ${PROF_STAT} ${MPIEXEC} ${EXEC}
+time ${MPIEXEC} ${EXEC}
 #time ${PROF_INST} ${MPIEXEC} ${EXEC}
 #time ${PROF_MEM} ${MPIEXEC} ${EXEC}
 

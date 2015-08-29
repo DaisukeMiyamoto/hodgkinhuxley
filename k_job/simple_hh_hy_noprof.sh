@@ -14,7 +14,7 @@
 
 . /work/system/Env_base
 
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=8
 
 PROF_CACHE="fapp -C -d ./prof_cache -Ihwm -Hevent=Cache -L1"
 PROF_PERF="fapp -C -d ./prof_perf -Ihwm -Hevent=Performance -L1"
@@ -26,10 +26,10 @@ MPIEXEC="mpiexec"
 
 EXEC="./hh.out"
 
-time ${PROF_CACHE} ${MPIEXEC} ${EXEC}
-time ${PROF_PERF} ${MPIEXEC} ${EXEC}
-time ${PROF_STAT} ${MPIEXEC} ${EXEC}
-time ${PROF_INST} ${MPIEXEC} ${EXEC}
-time ${PROF_MEM} ${MPIEXEC} ${EXEC}
+#time ${PROF_CACHE} ${MPIEXEC} ${EXEC}
+#time ${PROF_PERF} ${MPIEXEC} ${EXEC}
+time ${MPIEXEC} ${EXEC}
+#time ${PROF_INST} ${MPIEXEC} ${EXEC}
+#time ${PROF_MEM} ${MPIEXEC} ${EXEC}
 
 
