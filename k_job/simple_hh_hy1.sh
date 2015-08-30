@@ -14,13 +14,13 @@
 
 . /work/system/Env_base
 
-export OMP_NUM_THREADS=8
+export OMP_NUM_THREADS=1
 
-PROF_CACHE="fapp -C -d ./prof_cache -Ihwm -Hevent=Cache -L2"
-PROF_PERF="fapp -C -d ./prof_perf -Ihwm -Hevent=Performance -L2"
-PROF_STAT="fapp -C -d ./prof_stat -Ihwm -Hevent=Statistics -L2"
-PROF_INST="fapp -C -d ./prof_inst -Ihwm -Hevent=Instructions -L2"
-PROF_MEM="fapp -C -d ./prof_mem -Ihwm -Hevent=MEM_access -L2"
+PROF_CACHE="fapp -C -d ./prof_cache -Ihwm -Hevent=Cache -L1"
+PROF_PERF="fapp -C -d ./prof_perf -Ihwm -Hevent=Performance -L1"
+PROF_STAT="fapp -C -d ./prof_stat -Ihwm -Hevent=Statistics -L1"
+PROF_INST="fapp -C -d ./prof_inst -Ihwm -Hevent=Instructions -L1"
+PROF_MEM="fapp -C -d ./prof_mem -Ihwm -Hevent=MEM_access -L1"
 
 MPIEXEC="mpiexec"
 

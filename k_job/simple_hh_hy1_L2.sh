@@ -14,7 +14,7 @@
 
 . /work/system/Env_base
 
-export OMP_NUM_THREADS=8
+export OMP_NUM_THREADS=1
 
 PROF_CACHE="fapp -C -d ./prof_cache -Ihwm -Hevent=Cache -L2"
 PROF_PERF="fapp -C -d ./prof_perf -Ihwm -Hevent=Performance -L2"
