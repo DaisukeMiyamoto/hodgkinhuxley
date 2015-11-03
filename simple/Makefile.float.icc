@@ -1,0 +1,31 @@
+# Makefile
+
+CC       = mpicc -cc=icc
+CFLAGS   = -O2 -xHost -DUSE_FLOAT
+LDFLAGS  = $(CFLAGS)
+INCLUDES = 
+LIBS   	 = 
+SRC      = hh.c
+OBJS     = hh.o
+PROG     = hh.icc.out
+INCLUDES += -I/usr/include/mpich
+LIBS 	 += -L/usr/lib/x86_64-linux-gnu -lmpich -lm -openmp
+
+
+all: $(PROG)
+
+$(PROG): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBS) $(LDFLAGS)
+
+asm: $(INCLUDES) $(SRC)
+	$(CC) -S $(SRC) $(CFLAGS)
+
+
+*.o : $(SRC)
+
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+
+clean:
+	rm -fv $(OBJ) *~ *.o
+

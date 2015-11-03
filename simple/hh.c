@@ -20,9 +20,7 @@ typedef double FLOAT;
 
 double hoc_Exp(double x);
 
-#define N_COMPARTMENT 10000
-
-
+#define N_COMPARTMENT (1024 * 8 * 8 * 2)
 
 static const FLOAT DT = 0.025;        // [msec]
 static const FLOAT CELSIUS = 6.3;     // [degC]
@@ -137,7 +135,6 @@ FLOAT hh_table[6][TABLE_SIZE];
 #define TABLE_H_TAU(x) hh_table[4][(x)]
 #define TABLE_H_INF(x) hh_table[5][(x)]
 #endif
-
 
 
 static void makeTable()
@@ -322,6 +319,7 @@ int main(int argc, char **argv)
 {
   //printf("Hodgkin-Huxley equation\n");
   int myid;
+  FLOAT stoptime = 100;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -329,12 +327,17 @@ int main(int argc, char **argv)
   initialize();
   makeTable();
 
+  printf (" [Hodgkin-Huxley Conditions]\n");
+  printf ("   * dt = %f, nstep = %d\n", DT, (int)(stoptime/(FLOAT)DT));
+  printf ("   * Total Compartments = %d\n", N_COMPARTMENT);
+  printf ("   * Type : %s\n", (sizeof(FLOAT)==sizeof(double))?"double":"float");
+
 #ifdef KCOMPUTER
   fapp_start("calc", 1, 1);  
 #endif
 
   printf("start (%d)\n", myid);
-  hh_with_table(10000);
+  hh_with_table(stoptime);
   printf("finished (%d)\n", myid);
 
 #ifdef KCOMPUTER
