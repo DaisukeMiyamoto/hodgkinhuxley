@@ -20,7 +20,7 @@ typedef double FLOAT;
 
 double hoc_Exp(double x);
 
-#define N_COMPARTMENT 10000
+#define N_COMPARTMENT 8000
 
 
 
@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 #endif
 
   printf("start (%d)\n", myid);
-  hh_with_table(10000);
+  hh_with_table(1000);
   printf("finished (%d)\n", myid);
 
 #ifdef KCOMPUTER
